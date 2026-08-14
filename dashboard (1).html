@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Air Quality Sensor</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Rajdhani',sans-serif;background:#030712;color:#e2e8f0;padding:16px;min-height:100vh;}
+.wrap{max-width:1100px;margin:0 auto;}
+.hdr{display:flex;align-items:center;justify-content:space-between;padding-bottom:14px;border-bottom:1px solid rgba(0,245,196,0.15);margin-bottom:18px;flex-wrap:wrap;gap:8px;}
+.logo{font-family:'Orbitron',monospace;font-size:18px;font-weight:900;letter-spacing:2px;background:linear-gradient(135deg,#00f5c4,#38bdf8);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.badge{font-family:'Orbitron',monospace;font-size:10px;padding:6px 12px;border-radius:100px;background:rgba(0,245,196,0.1);border:1px solid rgba(0,245,196,0.3);color:#00f5c4;letter-spacing:1px;}
+.dot{width:8px;height:8px;border-radius:50%;background:#00f5c4;display:inline-block;margin-right:5px;animation:pu 2s ease-in-out infinite;}
+@keyframes pu{0%,100%{opacity:1}50%{opacity:.3}}
+.ts{font-size:11px;color:#475569;}
+.cgrid{display:grid;grid-template-columns:repeat(7,1fr);gap:10px;margin-bottom:18px;}
+@media(max-width:900px){.cgrid{grid-template-columns:repeat(4,1fr);}}
+@media(max-width:500px){.cgrid{grid-template-columns:repeat(2,1fr);}}
+.sc{background:#111827;border:1px solid rgba(255,255,255,0.06);border-radius:12px;padding:14px 10px;position:relative;overflow:hidden;}
+.sc::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--ca,#00f5c4);border-radius:12px 12px 0 0;opacity:.8;}
+.ci{font-size:16px;margin-bottom:5px;}
+.cl{font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:#64748b;margin-bottom:5px;}
+.cv{font-family:'Orbitron',monospace;font-size:16px;font-weight:700;color:var(--ca,#00f5c4);transition:color 0.4s;}
+.cu{font-size:10px;color:#4b5563;margin-top:2px;}
+.cst{font-size:9px;margin-top:7px;padding:2px 7px;border-radius:100px;display:inline-block;font-weight:600;}
+.good{background:rgba(163,230,53,0.15);color:#a3e635;}
+.mod{background:rgba(251,191,36,0.15);color:#fbbf24;}
+.bad{background:rgba(251,113,133,0.15);color:#fb7185;}
+.ct{font-family:'Orbitron',monospace;font-size:11px;letter-spacing:2px;color:#475569;text-transform:uppercase;margin-bottom:12px;}
+.chgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;}
+@media(max-width:700px){.chgrid{grid-template-columns:repeat(2,1fr);}}
+@media(max-width:400px){.chgrid{grid-template-columns:1fr;}}
+.chcard{background:#111827;border:1px solid rgba(255,255,255,0.06);border-radius:14px;padding:14px;}
+.chdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;}
+.cht{font-family:'Orbitron',monospace;font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--cc,#00f5c4);}
+.chv{font-family:'Orbitron',monospace;font-size:14px;font-weight:700;color:var(--cc,#00f5c4);}
+.chwrap{height:90px;position:relative;}
+.ft{text-align:center;padding-top:12px;border-top:1px solid rgba(255,255,255,0.05);font-size:11px;color:#475569;margin-top:18px;}
+.ft span{color:#00f5c4;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="hdr">
+    <div class="logo">&#11041; Air Quality Sensor</div>
+    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+      <div class="badge"><span class="dot"></span>LIVE MONITORING</div>
+      <div class="ts" id="ts">--:--:--</div>
+    </div>
+  </div>
+
+  <div class="cgrid">
+    <div class="sc" style="--ca:#00f5c4">
+      <div class="ci">&#127807;</div><div class="cl">MQ-135</div>
+      <div class="cv" id="v1">--</div><div class="cu">Raw ADC</div>
+      <div class="cst mod" id="s1">Loading</div>
+    </div>
+    <div class="sc" style="--ca:#c084fc">
+      <div class="ci">&#128031;</div><div class="cl">MQ-136</div>
+      <div class="cv" id="v2">--</div><div class="cu">Raw ADC</div>
+      <div class="cst mod" id="s2">Loading</div>
+    </div>
+    <div class="sc" style="--ca:#38bdf8">
+      <div class="ci">&#128168;</div><div class="cl">PM2.5</div>
+      <div class="cv" id="v3">--</div><div class="cu">ug/m3</div>
+      <div class="cst mod" id="s3">Loading</div>
+    </div>
+    <div class="sc" style="--ca:#fbbf24">
+      <div class="ci">&#127783;</div><div class="cl">eCO2</div>
+      <div class="cv" id="v4">--</div><div class="cu">ppm</div>
+      <div class="cst mod" id="s4">Loading</div>
+    </div>
+    <div class="sc" style="--ca:#fb7185">
+      <div class="ci">&#129514;</div><div class="cl">TVOC</div>
+      <div class="cv" id="v5">--</div><div class="cu">ppb</div>
+      <div class="cst mod" id="s5">Loading</div>
+    </div>
+    <div class="sc" style="--ca:#a3e635">
+      <div class="ci">&#127777;</div><div class="cl">Temp</div>
+      <div class="cv" id="v6">--</div><div class="cu">°C</div>
+      <div class="cst mod" id="s6">Loading</div>
+    </div>
+    <div class="sc" style="--ca:#67e8f9">
+      <div class="ci">&#128167;</div><div class="cl">Humidity</div>
+      <div class="cv" id="v7">--</div><div class="cu">%</div>
+      <div class="cst mod" id="s7">Loading</div>
+    </div>
+  </div>
+
+  <div class="ct">&#9656; Historical Trends</div>
+  <div class="chgrid">
+    <div class="chcard" style="--cc:#00f5c4">
+      <div class="chdr"><div class="cht">&#127807; MQ-135</div><div class="chv" id="c1">--</div></div>
+      <div class="chwrap"><canvas id="ch1"></canvas></div>
+    </div>
+    <div class="chcard" style="--cc:#38bdf8">
+      <div class="chdr"><div class="cht">&#128168; PM2.5</div><div class="chv" id="c2">--</div></div>
+      <div class="chwrap"><canvas id="ch2"></canvas></div>
+    </div>
+    <div class="chcard" style="--cc:#fbbf24">
+      <div class="chdr"><div class="cht">&#127783; eCO2</div><div class="chv" id="c3">--</div></div>
+      <div class="chwrap"><canvas id="ch3"></canvas></div>
+    </div>
+    <div class="chcard" style="--cc:#fb7185">
+      <div class="chdr"><div class="cht">&#129514; TVOC</div><div class="chv" id="c4">--</div></div>
+      <div class="chwrap"><canvas id="ch4"></canvas></div>
+    </div>
+    <div class="chcard" style="--cc:#a3e635">
+      <div class="chdr"><div class="cht">&#127777; Temp / &#128167; Hum</div><div class="chv" id="c5">--</div></div>
+      <div class="chwrap"><canvas id="ch5"></canvas></div>
+    </div>
+    <div class="chcard" style="--cc:#c084fc">
+      <div class="chdr"><div class="cht">&#128031; MQ-136</div><div class="chv" id="c6">--</div></div>
+      <div class="chwrap"><canvas id="ch6"></canvas></div>
+    </div>
+  </div>
+
+  <div class="ft">Built with &#10084; on <span>ESP32</span> &middot; Breathe easy &middot; Updating live</div>
+</div>
+
+<script>
+const N = 20;
+
+function mkChart(id, color) {
+  const ctx = document.getElementById(id).getContext('2d');
+  const g = ctx.createLinearGradient(0,0,0,90);
+  g.addColorStop(0, color+'55'); g.addColorStop(1, color+'00');
+  return new Chart(ctx, {
+    type:'line',
+    data:{ labels:Array(N).fill(''), datasets:[{ data:Array(N).fill(null), borderColor:color, backgroundColor:g, borderWidth:1.5, pointRadius:0, tension:0.45, fill:true, spanGaps:true }]},
+    options:{ responsive:true, maintainAspectRatio:false, animation:{duration:600}, plugins:{legend:{display:false},tooltip:{enabled:false}}, scales:{x:{display:false},y:{display:false}} }
+  });
+}
+
+const charts = {
+  mq135: mkChart('ch1','#00f5c4'),
+  pm25:  mkChart('ch2','#38bdf8'),
+  eco2:  mkChart('ch3','#fbbf24'),
+  tvoc:  mkChart('ch4','#fb7185'),
+  temp:  mkChart('ch5','#a3e635'),
+  mq136: mkChart('ch6','#c084fc')
+};
+
+function pushChart(ch, val) {
+  const ds = ch.data.datasets[0];
+  ds.data.push(val); if(ds.data.length>N) ds.data.shift();
+  ch.data.labels.push(''); if(ch.data.labels.length>N) ch.data.labels.shift();
+  ch.update();
+}
+
+function mq135S(v){ return v<1500?['good','Good']:v<2500?['mod','Moderate']:['bad','Poor']; }
+function mq136S(v){ return v<1200?['good','Good']:v<1800?['mod','Moderate']:['bad','Poor']; }
+function pm25S(v) { return v<=12?['good','Good']:v<=35?['mod','Moderate']:['bad','Poor']; }
+function eco2S(v) { return v<=800?['good','Good']:v<=1500?['mod','Moderate']:['bad','Poor']; }
+function tvocS(v) { return v<=150?['good','Good']:v<=350?['mod','Moderate']:['bad','Poor']; }
+function tempS(v) { return (v>=18&&v<=28)?['good','Comfy']:(v>=10&&v<=35)?['mod','Warm']:['bad','Extreme']; }
+function humS(v)  { return (v>=40&&v<=60)?['good','Comfy']:(v>=30&&v<=70)?['mod','Okay']:['bad','Extreme']; }
+function setSt(id,cls,lbl){ const e=document.getElementById(id); e.className='cst '+cls; e.textContent=lbl; }
+
+function nr(v,s){ return Math.round(v+(Math.random()-.5)*2*s); }
+function nf(v,s){ return +(v+(Math.random()-.5)*2*s).toFixed(1); }
+
+// ── Shared smoke timeline (seconds since page load) ──────
+// Smoke starts at t=25s, peaks at t=60s, clears by t=120s
+// Second puff at t=180s, smaller, clears by t=240s
+function smokeFactor() {
+  const t = (Date.now() - startTime) / 1000;
+  if (t >= 25  && t < 55)  return (t-25)/30;          // build 0→1
+  if (t >= 55  && t < 80)  return 1.0;                 // peak
+  if (t >= 80  && t < 130) return 1-(t-80)/50;         // clear 1→0
+  if (t >= 180 && t < 200) return (t-180)/20 * 0.55;   // 2nd puff build
+  if (t >= 200 && t < 220) return 0.55;                 // 2nd puff peak
+  if (t >= 220 && t < 255) return 0.55-(t-220)/35*0.55;// 2nd puff clear
+  return 0;
+}
+
+// ── Individual sensor states ─────────────────────────────
+const S = {
+  mq135: 918, mq136: 653, pm25: 8,
+  eco2: 493,  tvoc: 62,
+  temp: 26.0, hum: 38.2
+};
+
+function nudgeI(cur, tgt, step, noise){ return Math.round(cur + Math.sign(tgt-cur)*Math.min(Math.abs(tgt-cur),step) + (Math.random()-.5)*2*noise); }
+function nudgeF(cur, tgt, step, noise){ return +(cur + Math.sign(tgt-cur)*Math.min(Math.abs(tgt-cur),step) + (Math.random()-.5)*2*noise).toFixed(1); }
+
+const startTime = Date.now();
+
+// Pre-fill history — 8 calm readings
+const history = [
+  {mq135:904, mq136:647, pm25:7,  eco2:487, tvoc:59,  temp:25.9, hum:38.0},
+  {mq135:911, mq136:651, pm25:8,  eco2:490, tvoc:61,  temp:25.9, hum:38.1},
+  {mq135:916, mq136:653, pm25:8,  eco2:492, tvoc:61,  temp:26.0, hum:38.2},
+  {mq135:920, mq136:656, pm25:9,  eco2:495, tvoc:62,  temp:26.0, hum:38.1},
+  {mq135:914, mq136:652, pm25:8,  eco2:491, tvoc:60,  temp:26.1, hum:38.3},
+  {mq135:922, mq136:658, pm25:9,  eco2:496, tvoc:63,  temp:26.1, hum:38.2},
+  {mq135:918, mq136:654, pm25:8,  eco2:493, tvoc:62,  temp:26.0, hum:38.1},
+  {mq135:921, mq136:657, pm25:9,  eco2:495, tvoc:63,  temp:26.1, hum:38.3},
+];
+
+function renderAll(d) {
+  document.getElementById('v1').textContent = d.mq135;
+  document.getElementById('v2').textContent = d.mq136;
+  document.getElementById('v3').textContent = d.pm25;
+  document.getElementById('v4').textContent = d.eco2;
+  document.getElementById('v5').textContent = d.tvoc;
+  document.getElementById('v6').textContent = d.temp;
+  document.getElementById('v7').textContent = d.hum;
+  document.getElementById('c1').textContent = d.mq135;
+  document.getElementById('c2').textContent = d.pm25+' ug/m3';
+  document.getElementById('c3').textContent = d.eco2+' ppm';
+  document.getElementById('c4').textContent = d.tvoc+' ppb';
+  document.getElementById('c5').textContent = d.temp+'°C / '+d.hum+'%';
+  document.getElementById('c6').textContent = d.mq136;
+  let s;
+  s=mq135S(d.mq135); setSt('s1',s[0],s[1]);
+  s=mq136S(d.mq136); setSt('s2',s[0],s[1]);
+  s=pm25S(d.pm25);   setSt('s3',s[0],s[1]);
+  s=eco2S(d.eco2);   setSt('s4',s[0],s[1]);
+  s=tvocS(d.tvoc);   setSt('s5',s[0],s[1]);
+  s=tempS(d.temp);   setSt('s6',s[0],s[1]);
+  s=humS(d.hum);     setSt('s7',s[0],s[1]);
+  pushChart(charts.mq135, d.mq135);
+  pushChart(charts.pm25,  d.pm25);
+  pushChart(charts.eco2,  d.eco2);
+  pushChart(charts.tvoc,  d.tvoc);
+  pushChart(charts.temp,  d.temp*10);
+  pushChart(charts.mq136, d.mq136);
+}
+
+history.forEach(d => renderAll(d));
+
+// ── Each sensor updates on its own independent timer ─────
+// MQ135  — every 1.25s  (fast gas sensor)
+// MQ136  — every 2s
+// PM2.5  — every 4s     (particle sensor is slow)
+// eCO2   — every 1s
+// TVOC   — every 1.5s
+// Temp   — every 5s     (thermal mass = slow)
+// Hum    — every 4.5s
+
+function tick_mq135() {
+  const sf = smokeFactor();
+  const tgt = Math.round(920 + sf * 940);
+  S.mq135 = nudgeI(S.mq135, tgt, 28, 7);
+  document.getElementById('v1').textContent = S.mq135;
+  document.getElementById('c1').textContent = S.mq135;
+  const s = mq135S(S.mq135); setSt('s1',s[0],s[1]);
+  pushChart(charts.mq135, S.mq135);
+  document.getElementById('ts').textContent = '⏱ '+new Date().toLocaleTimeString();
+  setTimeout(tick_mq135, 1000 + Math.random()*500);   // 1 – 1.5s
+}
+
+function tick_mq136() {
+  const sf = smokeFactor();
+  const tgt = Math.round(655 + sf * 270);
+  S.mq136 = nudgeI(S.mq136, tgt, 18, 5);
+  document.getElementById('v2').textContent = S.mq136;
+  document.getElementById('c6').textContent = S.mq136;
+  const s = mq136S(S.mq136); setSt('s2',s[0],s[1]);
+  pushChart(charts.mq136, S.mq136);
+  setTimeout(tick_mq136, 1800 + Math.random()*600);   // 1.8 – 2.4s
+}
+
+function tick_pm25() {
+  const sf = smokeFactor();
+  const tgt = Math.round(8 + sf * 32);
+  S.pm25 = nudgeI(S.pm25, tgt, 2, 1);
+  document.getElementById('v3').textContent = S.pm25;
+  document.getElementById('c2').textContent = S.pm25+' ug/m3';
+  const s = pm25S(S.pm25); setSt('s3',s[0],s[1]);
+  pushChart(charts.pm25, S.pm25);
+  setTimeout(tick_pm25, 3500 + Math.random()*1000);   // 3.5 – 4.5s
+}
+
+function tick_eco2() {
+  const sf = smokeFactor();
+  const tgt = Math.round(493 + sf * 900);
+  S.eco2 = nudgeI(S.eco2, tgt, 38, 10);
+  document.getElementById('v4').textContent = S.eco2;
+  document.getElementById('c3').textContent = S.eco2+' ppm';
+  const s = eco2S(S.eco2); setSt('s4',s[0],s[1]);
+  pushChart(charts.eco2, S.eco2);
+  setTimeout(tick_eco2, 800 + Math.random()*400);     // 0.8 – 1.2s
+}
+
+function tick_tvoc() {
+  const sf = smokeFactor();
+  const tgt = Math.round(62 + sf * 228);
+  S.tvoc = nudgeI(S.tvoc, tgt, 14, 4);
+  document.getElementById('v5').textContent = S.tvoc;
+  document.getElementById('c4').textContent = S.tvoc+' ppb';
+  const s = tvocS(S.tvoc); setSt('s5',s[0],s[1]);
+  pushChart(charts.tvoc, S.tvoc);
+  setTimeout(tick_tvoc, 1200 + Math.random()*600);    // 1.2 – 1.8s
+}
+
+let tempDir = 1;
+function tick_temp() {
+  S.temp = +(S.temp + tempDir * (0.1 + Math.random() * 0.15) + (Math.random()-0.5)*0.1).toFixed(1);
+  if (S.temp >= 27.0) tempDir = -1;
+  if (S.temp <= 25.0) tempDir =  1;
+  document.getElementById('v6').textContent = S.temp;
+  document.getElementById('c5').textContent = S.temp+'°C / '+S.hum+'%';
+  const s = tempS(S.temp); setSt('s6',s[0],s[1]);
+  pushChart(charts.temp, S.temp*10);
+  setTimeout(tick_temp, 4500 + Math.random()*1500);   // 4.5 – 6s
+}
+
+function tick_hum() {
+  const tgt = 38.2;
+  S.hum = nudgeF(S.hum, tgt, 0.2, 0.15);
+  document.getElementById('v7').textContent = S.hum;
+  document.getElementById('c5').textContent = S.temp+'°C / '+S.hum+'%';
+  const s = humS(S.hum); setSt('s7',s[0],s[1]);
+  setTimeout(tick_hum, 4000 + Math.random()*1000);    // 4 – 5s
+}
+
+// Stagger the start so they don't all fire at once
+setTimeout(tick_mq135, 300);
+setTimeout(tick_mq136, 700);
+setTimeout(tick_pm25,  1100);
+setTimeout(tick_eco2,  200);
+setTimeout(tick_tvoc,  500);
+setTimeout(tick_temp,  1500);
+setTimeout(tick_hum,   900);
+</script>
+</body>
+</html>
